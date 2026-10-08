@@ -69,6 +69,6 @@ Una sola app que une **entreno + nutrición + hábitos**, con un "Hoy" unificado
 | 1 ✅ | Entreno: catálogo (free-exercise-db), rutinas, sesión en vivo (series, repeticiones, peso, RPE), temporizador de descanso, "la última vez…" e historial. |
 | 2 ✅ | Nutrición: diario por comidas, búsqueda en Open Food Facts y USDA, código de barras, quick add, recetas, agua, metas (IOM/OMS). |
 | 3 ✅ | Progreso: récords personales, 1RM estimado, gráficas, peso y medidas, fotos, rachas y pantalla "Hoy" unificada. |
-| 4 ✅ | Programas con progresión automática (5x5, GZCLP, 5/3/1), calculadora de discos, calentamientos, ayuno y notificaciones. |
+| 4 ✅ | Progresión automática (lineal y doble) con programas PPL y StrongLifts 5x5, calculadora de discos, calentamientos, ayuno y recordatorios en Calendario. Pendientes opcionales: GZCLP y 5/3/1. |
 | 5 | Respaldo automático en Google Drive y, opcionalmente, sincronización en la nube. |
 | 6 | Asistente de IA para la dieta (chat con acceso de solo lectura a tus datos). Investigación en `docs/ideas/asistente-ia-nutricion.md`. |
