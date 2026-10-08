@@ -18,6 +18,14 @@ PWA personal de entrenamiento + nutrición + hábitos, instalada en un iPhone 15
 - Sesión activa: `settings.activeSessionId`. Al terminar se guardan solo las series marcadas (`done`). "Última vez" = series hechas del último entreno con ese ejercicio.
 - Unidades: kg. El usuario entrena Push/Pull/Legs; las rutinas tienen `order` y la app sugiere la siguiente de la rotación.
 
+## Nutrición (fase 2)
+- Perfil y metas en `settings` (`profile`, `nutritionGoals`). BMR Mifflin-St Jeor × actividad; proteína g/kg según objetivo; grasa 25 %; carbohidratos el resto (`nutrition/goals.ts`). `custom: true` = metas fijadas a mano: no se recalculan.
+- Alimentos: básicos en español (`nutrition/basics.ts`, valores de USDA, offline) + Open Food Facts (`nutrition/off.ts`: `cgi/search.pl` porque la API nueva no permite CORS; límite de 10 búsquedas/min → solo se busca al enviar). Al usarse, el alimento se guarda en `foods` y queda offline.
+- Las entradas del diario guardan una copia de los macros (snapshot); editar un alimento no cambia el pasado.
+- Escáner: `BarcodeDetector` nativo o el ponyfill `barcode-detector` (ZXing wasm, servido localmente y precacheado). La cámara solo funciona en HTTPS o localhost.
+- Diálogos: usar `confirmDialog()` (`components/dialog.tsx`), nunca `window.confirm` (en las PWA de iOS puede no mostrarse).
+- Para probar cambios en el navegador, `vite build` + `vite preview` es más fiable que `vite dev` (el watcher de Windows a veces pierde ediciones). Desregistra el service worker si ves una versión vieja.
+
 ## Convenciones
 - Código organizado por feature: `src/features/<feature>/`. UI compartida en `src/components/ui.tsx`.
 - UI en español. Mobile-first, objetivos táctiles ≥ 44px, respetar safe areas (`.pt-safe` / `.pb-safe`), inputs ≥ 16px (evita zoom en iOS).

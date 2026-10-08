@@ -64,13 +64,40 @@ export interface Macros {
   fat: number
 }
 
+export interface RecipeIngredient {
+  foodId: string
+  grams: number
+}
+
 export interface Food {
-  id: string
+  id: string // 'off:<código>', 'basic:<slug>' o UUID (propios y recetas)
   name: string
   brand: string | null
   barcode: string | null
-  per100g: Macros
-  source: 'off' | 'usda' | 'custom'
+  per100g: Macros // líquidos: por 100 ml
+  servingG: number | null // tamaño de una porción
+  servingName: string | null // "1 huevo", "1 taza"…
+  source: 'off' | 'basic' | 'custom' | 'recipe'
+  ingredients?: RecipeIngredient[] // solo recetas
+  servings?: number // solo recetas: porciones que rinde
+  lastUsedAt: number | null
+}
+
+export type Sex = 'male' | 'female'
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very'
+export type Goal = 'lose' | 'maintain' | 'gain'
+
+export interface Profile {
+  sex: Sex
+  birthYear: number
+  heightCm: number
+  activity: ActivityLevel
+  goal: Goal
+}
+
+export interface NutritionGoals extends Macros {
+  waterMl: number
+  custom: boolean // true = el usuario editó las metas a mano
 }
 
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'

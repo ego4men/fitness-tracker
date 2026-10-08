@@ -2,12 +2,15 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId } from '../../db/db'
 import { toISODate } from '../../lib/date'
 import { Button, Card } from '../../components/ui'
+import { getGoals } from '../nutrition/foods'
 
-const GOAL_ML = 2500
+const DEFAULT_GOAL_ML = 2500
 const STEPS = [250, 500]
 
-export function WaterCard() {
+export function WaterCard({ goalMl }: { goalMl?: number }) {
   const today = toISODate()
+  const savedGoal = useLiveQuery(async () => (await getGoals())?.waterMl, [])
+  const GOAL_ML = goalMl ?? savedGoal ?? DEFAULT_GOAL_ML
   const logs = useLiveQuery(() => db.water.where('date').equals(today).sortBy('createdAt'), [today])
   const total = logs?.reduce((s, l) => s + l.ml, 0) ?? 0
   const pct = Math.min(100, Math.round((total / GOAL_ML) * 100))

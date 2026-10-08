@@ -6,7 +6,12 @@ import { UpdatePrompt } from './components/UpdatePrompt'
 import { ensureCatalog } from './features/exercises/catalog'
 import { ExerciseDetailPage } from './features/exercises/ExerciseDetailPage'
 import { ExercisesPage } from './features/exercises/ExercisesPage'
+import { AddFoodPage } from './features/nutrition/AddFoodPage'
+import { FoodEditorPage } from './features/nutrition/FoodEditorPage'
+import { MyFoodsPage } from './features/nutrition/MyFoodsPage'
 import { NutritionPage } from './features/nutrition/NutritionPage'
+import { ProfilePage } from './features/nutrition/ProfilePage'
+import { RecipeEditorPage } from './features/nutrition/RecipeEditorPage'
 import { ProgressPage } from './features/progress/ProgressPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { TodayPage } from './features/today/TodayPage'
@@ -37,6 +42,11 @@ export function App() {
           <Route path="/entreno/historial" element={<HistoryPage />} />
           <Route path="/entreno/historial/:id" element={<SessionDetailPage />} />
           <Route path="/nutricion" element={<NutritionPage />} />
+          <Route path="/nutricion/perfil" element={<ProfilePage />} />
+          <Route path="/nutricion/agregar/:meal" element={<AddFoodPage />} />
+          <Route path="/nutricion/mis-alimentos" element={<MyFoodsPage />} />
+          <Route path="/nutricion/alimento/:id" element={<FoodEditorPage />} />
+          <Route path="/nutricion/receta/:id" element={<RecipeEditorPage />} />
           <Route path="/progreso" element={<ProgressPage />} />
           <Route path="/ajustes" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -31,7 +31,8 @@ export default defineConfig({
         scope: base,
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json}'],
+        // .wasm = lector de códigos de barras (para escanear sin internet).
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json,wasm}'],
         navigateFallback: 'index.html',
         // Imágenes de ejercicios: se guardan offline al verlas por primera vez.
         runtimeCaching: [

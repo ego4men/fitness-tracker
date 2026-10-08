@@ -1,6 +1,10 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, ComingSoon, Page } from '../../components/ui'
-import { formatLongDate } from '../../lib/date'
+import { Button, Card, Page } from '../../components/ui'
+import { db } from '../../db/db'
+import { formatLongDate, toISODate } from '../../lib/date'
+import { getGoals, mealForHour, totals } from '../nutrition/foods'
+import { MacroSummary } from '../nutrition/MacroSummary'
 import { formatDuration } from '../workout/stats'
 import { useStartRoutine, useWorkoutOverview } from '../workout/WorkoutPage'
 import { InstallHint } from './InstallHint'
@@ -11,11 +15,44 @@ export function TodayPage() {
     <Page title="Hoy" subtitle={formatLongDate()}>
       <InstallHint />
       <TodayWorkoutCard />
-      <Card title="Calorías y macros">
-        <ComingSoon items={['Calorías restantes del día', 'Proteína · Carbohidratos · Grasa']} />
-      </Card>
+      <TodayNutritionCard />
       <WaterCard />
     </Page>
+  )
+}
+
+function TodayNutritionCard() {
+  const navigate = useNavigate()
+  const data = useLiveQuery(async () => ({
+    goals: await getGoals(),
+    entries: await db.diary.where('date').equals(toISODate()).toArray(),
+  }), [])
+  if (!data) return null
+
+  if (!data.goals) {
+    return (
+      <Card title="Calorías y macros">
+        <p className="mb-3 text-sm text-muted">Configura tus datos para calcular tus metas diarias.</p>
+        <Button variant="primary" className="w-full" onClick={() => navigate('/nutricion/perfil')}>
+          Configurar
+        </Button>
+      </Card>
+    )
+  }
+
+  return (
+    <Card
+      title="Calorías y macros"
+      action={
+        <button onClick={() => navigate(`/nutricion/agregar/${mealForHour()}`)} className="min-h-11 px-2 text-sm font-semibold text-accent">
+          + Comida
+        </button>
+      }
+    >
+      <button onClick={() => navigate('/nutricion')} className="block w-full text-left">
+        <MacroSummary consumed={totals(data.entries)} goals={data.goals} />
+      </button>
+    </Card>
   )
 }
 

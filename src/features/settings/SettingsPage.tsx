@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { confirmDialog } from '../../components/dialog'
 import { Button, Card, Page } from '../../components/ui'
 import { db } from '../../db/db'
@@ -58,6 +59,11 @@ export function SettingsPage() {
 
   return (
     <Page title="Ajustes">
+      <Link to="/nutricion/perfil" className="flex items-center justify-between rounded-2xl border border-line bg-surface p-4 active:bg-surface-2">
+        <span className="font-semibold">Perfil y metas de nutrición</span>
+        <span className="text-muted">›</span>
+      </Link>
+
       <Card title="Respaldo">
         <p className="mb-3 text-sm text-muted">
           Tus datos viven en este iPhone. Exporta un respaldo de vez en cuando y guárdalo en iCloud Drive, Google Drive u
