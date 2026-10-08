@@ -31,6 +31,14 @@ PWA personal de entrenamiento + nutrición + hábitos, instalada en un iPhone 15
 - Gráficas SVG propias en `components/charts.tsx` (sin librería). Siguen la skill dataviz: líneas 2px, marcadores ≥8px con anillo, barras ≤24px redondeadas, tooltip táctil, leyenda con ≥2 series y "Ver datos" como vista de tabla. Los colores de datos son tokens `--color-series*`, `--color-heat-*` y macros (validados con `validate_palette.js` para el fondo oscuro). El lima (`accent`) es de interfaz, no de datos.
 - Cálculos en `progress/stats.ts`: media móvil por días naturales, ritmo kg/semana por regresión, rachas y calendario.
 
+## Fase 4: progresión, calentamiento, discos, ayuno y recordatorios
+- Progresión por ejercicio de rutina (`RoutineExercise.progression` + `state`): `linear` (tipo 5x5, descarga al 90 % tras N fallos) o `double` (rango de reps → +kg al llegar al tope). Se evalúa en `finishSession` (`workout/progression.ts`), que guarda el nuevo estado en la rutina y una nota en `session.progression`.
+- Las series de calentamiento (`SetLog.warmup`) NO cuentan para el volumen, los récords, la progresión ni las estadísticas: usa siempre `isWorkSet()`.
+- Programas (`defaultRoutines.ts → PROGRAMS`): PPL con doble progresión y StrongLifts 5x5. Las rutinas `archived` quedan fuera de la rotación.
+- Barra y discos en `settings.gym` (`workout/gym.ts`).
+- Ayuno: tabla `fasts` (esquema v3), desactivado por defecto y con aviso de salud.
+- Recordatorios: archivo .ics con RRULE y alarma para la app Calendario (las PWA de iOS no programan notificaciones sin servidor).
+
 ## Convenciones
 - Código organizado por feature: `src/features/<feature>/`. UI compartida en `src/components/ui.tsx`.
 - UI en español. Mobile-first, objetivos táctiles ≥ 44px, respetar safe areas (`.pt-safe` / `.pb-safe`), inputs ≥ 16px (evita zoom en iOS).

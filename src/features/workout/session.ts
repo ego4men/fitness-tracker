@@ -1,5 +1,6 @@
 import { db, newId } from '../../db/db'
-import type { Routine, SetLog, WorkoutSession } from '../../db/types'
+import type { ProgressionNote, Routine, SetLog, WorkoutSession } from '../../db/types'
+import { evaluateProgression, isWorkSet, warmupSets } from './progression'
 import { prefillSets } from './stats'
 
 const ACTIVE_KEY = 'activeSessionId'
@@ -14,11 +15,11 @@ export async function lastPerformance(exerciseId: string, excludeSessionId?: str
     .where('[exerciseId+createdAt]')
     .between([exerciseId, -Infinity], [exerciseId, Infinity])
     .reverse()
-    .filter((s) => s.done && s.sessionId !== excludeSessionId)
+    .filter((s) => isWorkSet(s) && s.sessionId !== excludeSessionId)
     .first()
   if (!recent) return []
   const all = await db.sets.where('sessionId').equals(recent.sessionId).toArray()
-  return all.filter((s) => s.exerciseId === exerciseId && s.done).sort((a, b) => a.order - b.order)
+  return all.filter((s) => s.exerciseId === exerciseId && isWorkSet(s)).sort((a, b) => a.order - b.order)
 }
 
 async function buildSets(
@@ -28,9 +29,21 @@ async function buildSets(
   targetReps: number,
   startOrder: number,
   baseTime: number,
+  targetWeightKg?: number,
+  fixedReps = false,
 ): Promise<SetLog[]> {
   const last = await lastPerformance(exerciseId, sessionId)
-  return prefillSets(count, targetReps, last).map((p, i) => ({
+  // Con progresión, el peso lo marca la regla; las reps, lo que hiciste la última vez a ese peso
+  // (o el objetivo fijo en la lineal, p. ej. 5x5).
+  let prefilled =
+    targetWeightKg != null
+      ? prefillSets(count, targetReps, last.filter((s) => s.weightKg === targetWeightKg)).map((p) => ({ ...p, weightKg: targetWeightKg }))
+      : prefillSets(count, targetReps, last)
+  if (fixedReps) {
+    const top = targetWeightKg ?? Math.max(0, ...last.map((s) => s.weightKg))
+    prefilled = prefilled.map(() => ({ weightKg: top, reps: targetReps }))
+  }
+  return prefilled.map((p, i) => ({
     id: newId(),
     sessionId,
     exerciseId,
@@ -57,7 +70,9 @@ export async function startSession(routine: Routine | null): Promise<string> {
   const sets: SetLog[] = []
   let order = 0
   for (const re of routine?.exercises ?? []) {
-    sets.push(...(await buildSets(id, re.exerciseId, re.sets, re.reps, order, now)))
+    sets.push(
+      ...(await buildSets(id, re.exerciseId, re.sets, re.reps, order, now, re.progression ? re.state?.weightKg : undefined, re.progression?.type === 'linear')),
+    )
     order += re.sets
   }
   await db.transaction('rw', db.sessions, db.sets, db.settings, async () => {
@@ -110,9 +125,13 @@ export async function removeExerciseFromSession(sessionId: string, exerciseId: s
   await db.sets.bulkDelete(ids)
 }
 
-/** Guarda solo las series completadas. Sin ninguna, descarta el entreno. */
+/**
+ * Guarda solo las series completadas (sin ninguna, descarta el entreno) y
+ * aplica la progresión de la rutina: calcula el peso de la próxima sesión.
+ */
 export async function finishSession(sessionId: string): Promise<'saved' | 'discarded'> {
-  return db.transaction('rw', db.sessions, db.sets, db.settings, async () => {
+  return db.transaction('rw', db.sessions, db.sets, db.settings, db.routines, async () => {
+    const session = await db.sessions.get(sessionId)
     const sets = await db.sets.where('sessionId').equals(sessionId).toArray()
     const pending = sets.filter((s) => !s.done).map((s) => s.id)
     await db.sets.bulkDelete(pending)
@@ -121,8 +140,50 @@ export async function finishSession(sessionId: string): Promise<'saved' | 'disca
       await db.sessions.delete(sessionId)
       return 'discarded'
     }
-    await db.sessions.update(sessionId, { endedAt: Date.now() })
+
+    const notes: ProgressionNote[] = []
+    const routine = session?.routineId ? await db.routines.get(session.routineId) : undefined
+    if (routine) {
+      let changed = false
+      const exercises = routine.exercises.map((item) => {
+        const result = evaluateProgression(item, sets.filter((s) => s.exerciseId === item.exerciseId && s.done))
+        if (!result) return item
+        changed = true
+        notes.push({ exerciseId: item.exerciseId, ...result.note })
+        return { ...item, state: result.state }
+      })
+      if (changed) await db.routines.update(routine.id, { exercises })
+    }
+    await db.sessions.update(sessionId, { endedAt: Date.now(), ...(notes.length ? { progression: notes } : {}) })
     return 'saved'
+  })
+}
+
+/** Inserta series de calentamiento antes de la primera serie de trabajo del ejercicio. */
+export async function addWarmups(sessionId: string, exerciseId: string, barKg: number, barbell: boolean) {
+  const all = (await db.sets.where('sessionId').equals(sessionId).toArray()).sort((a, b) => a.order - b.order)
+  const mine = all.filter((s) => s.exerciseId === exerciseId)
+  if (!mine.length || mine.some((s) => s.warmup)) return
+  const workKg = Math.max(...mine.map((s) => s.weightKg))
+  const warm = warmupSets(workKg, barKg, barbell)
+  if (!warm.length) return
+  const firstOrder = mine[0].order
+  await db.transaction('rw', db.sets, async () => {
+    for (const s of all.filter((x) => x.order >= firstOrder)) await db.sets.update(s.id, { order: s.order + warm.length })
+    await db.sets.bulkAdd(
+      warm.map((w, i) => ({
+        id: newId(),
+        sessionId,
+        exerciseId,
+        order: firstOrder + i,
+        weightKg: w.weightKg,
+        reps: w.reps,
+        rpe: null,
+        done: false,
+        warmup: true,
+        createdAt: mine[0].createdAt - warm.length + i,
+      })),
+    )
   })
 }
 

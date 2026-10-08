@@ -1,3 +1,4 @@
+import { isWorkSet } from '../workout/progression'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { CalendarHeatmap } from '../../components/charts'
 import { Card } from '../../components/ui'
@@ -28,7 +29,7 @@ export function ConsistencyTab() {
     const sessions = (await db.sessions.toArray()).filter((s) => s.endedAt)
     const sets = await db.sets.toArray()
     const setsBySession = new Map<string, number>()
-    for (const s of sets) if (s.done) setsBySession.set(s.sessionId, (setsBySession.get(s.sessionId) ?? 0) + 1)
+    for (const s of sets) if (isWorkSet(s)) setsBySession.set(s.sessionId, (setsBySession.get(s.sessionId) ?? 0) + 1)
     const training = new Map<ISODate, { names: string[]; sets: number }>()
     for (const s of sessions) {
       const d = toISODate(new Date(s.startedAt))

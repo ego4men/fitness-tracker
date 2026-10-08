@@ -4,12 +4,15 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { confirmDialog } from '../../components/dialog'
 import { Button, Page } from '../../components/ui'
 import { db } from '../../db/db'
-import type { Exercise, Routine, SetLog } from '../../db/types'
+import type { Exercise, GymSettings, Routine, RoutineExercise, SetLog } from '../../db/types'
+import { useGym } from './gym'
+import { platesPerSide, targetLabel } from './progression'
 import { ExercisePicker, ExerciseThumb } from '../exercises/ExerciseBrowser'
 import { useRestTimer } from './restTimer'
 import {
   addExerciseToSession,
   addSet,
+  addWarmups,
   discardSession,
   finishSession,
   getActiveSessionId,
@@ -18,7 +21,7 @@ import {
   removeExerciseFromSession,
   switchSession,
 } from './session'
-import { formatDuration, summarizeSets } from './stats'
+import { formatDuration, formatKg, summarizeSets } from './stats'
 
 const DEFAULT_REST = 90
 
@@ -133,6 +136,7 @@ export function ActiveSessionPage() {
             exercise={ex}
             exerciseId={g.exerciseId}
             sets={g.sets}
+            routineItem={routine?.exercises.find((e) => e.exerciseId === g.exerciseId)}
             onSetDone={() => startRest(restFor(g.exerciseId))}
           />
         )
@@ -157,15 +161,22 @@ function ExerciseBlock({
   exercise,
   exerciseId,
   sets,
+  routineItem,
   onSetDone,
 }: {
   sessionId: string
   exercise: Exercise | undefined
   exerciseId: string
   sets: SetLog[]
+  routineItem?: RoutineExercise
   onSetDone: () => void
 }) {
   const last = useLiveQuery(() => lastPerformance(exerciseId, sessionId), [exerciseId, sessionId])
+  const gym = useGym()
+  const barbell = exercise?.equipment === 'barbell'
+  const target = routineItem ? targetLabel(routineItem) : null
+  const canWarmUp = !sets.some((s) => s.warmup) && !sets.some((s) => s.done) && sets.some((s) => s.weightKg > 0)
+  let workIndex = 0
 
   const onRemove = async () => {
     const ok = await confirmDialog({
@@ -188,6 +199,7 @@ function ExerciseBlock({
           <p className="truncate text-xs text-muted">
             {last?.length ? `Última vez: ${summarizeSets(last)}` : 'Primera vez con este ejercicio'}
           </p>
+          {target && <p className="truncate text-xs font-semibold text-accent">{target}</p>}
         </div>
         <button onClick={onRemove} className="min-h-11 px-2 text-muted" aria-label="Quitar ejercicio">
           ✕
@@ -201,13 +213,29 @@ function ExerciseBlock({
         <span />
       </div>
       <div className="flex flex-col gap-1.5">
-        {sets.map((s, i) => (
-          <SetRow key={s.id} set={s} index={i + 1} onDone={onSetDone} />
+        {sets.map((s) => (
+          <SetRow
+            key={s.id}
+            set={s}
+            label={s.warmup ? 'C' : String(++workIndex)}
+            plates={barbell ? gym : null}
+            onDone={s.warmup ? undefined : onSetDone}
+          />
         ))}
       </div>
-      <button onClick={() => addSet(sessionId, exerciseId)} className="mt-2 min-h-11 w-full rounded-xl text-sm font-semibold text-accent active:bg-surface-2">
-        + Serie
-      </button>
+      <div className="mt-2 flex gap-2">
+        {canWarmUp && (
+          <button
+            onClick={() => addWarmups(sessionId, exerciseId, gym.barKg, barbell)}
+            className="min-h-11 flex-1 rounded-xl text-sm font-semibold text-muted active:bg-surface-2"
+          >
+            + Calentamiento
+          </button>
+        )}
+        <button onClick={() => addSet(sessionId, exerciseId)} className="min-h-11 flex-1 rounded-xl text-sm font-semibold text-accent active:bg-surface-2">
+          + Serie
+        </button>
+      </div>
     </section>
   )
 }
@@ -217,7 +245,17 @@ function parseNum(s: string): number | null {
   return s.trim() !== '' && Number.isFinite(n) && n >= 0 ? n : null
 }
 
-function SetRow({ set, index, onDone }: { set: SetLog; index: number; onDone: () => void }) {
+function SetRow({
+  set,
+  label,
+  plates,
+  onDone,
+}: {
+  set: SetLog
+  label: string
+  plates: GymSettings | null
+  onDone?: () => void
+}) {
   // Estado local para no pelear con lo que se escribe ("77," mientras tecleas).
   const [kg, setKg] = useState(set.weightKg ? String(set.weightKg) : '')
   const [reps, setReps] = useState(String(set.reps))
@@ -229,21 +267,28 @@ function SetRow({ set, index, onDone }: { set: SetLog; index: number; onDone: ()
     const r = parseNum(reps) ?? 0
     const done = !set.done
     await save({ done, weightKg: w, reps: Math.round(r) })
-    if (done) onDone()
+    if (done) onDone?.()
   }
 
   const onDelete = async () => {
     if (set.done) return
-    const ok = await confirmDialog({ title: `Borrar la serie ${index}`, confirmText: 'Borrar', danger: true })
+    const ok = await confirmDialog({
+      title: set.warmup ? 'Borrar serie de calentamiento' : `Borrar la serie ${label}`,
+      confirmText: 'Borrar',
+      danger: true,
+    })
     if (ok) await db.sets.delete(set.id)
   }
 
   const input = 'min-h-11 w-full rounded-lg border bg-surface-2 text-center text-lg font-semibold tabular-nums focus:border-accent focus:outline-none'
+  const weight = parseNum(kg) ?? 0
+  const perSide = plates && !set.done && weight > plates.barKg ? platesPerSide(weight, plates.barKg, plates.plates) : null
 
   return (
-    <div className={`grid grid-cols-[2rem_1fr_1fr_3rem] items-center gap-2 rounded-xl px-1 ${set.done ? 'bg-accent/10' : ''}`}>
-      <button onClick={onDelete} className="min-h-11 text-sm font-semibold text-muted">
-        {index}
+    <div>
+    <div className={`grid grid-cols-[2rem_1fr_1fr_3rem] items-center gap-2 rounded-xl px-1 ${set.done ? 'bg-accent/10' : ''} ${set.warmup ? 'opacity-75' : ''}`}>
+      <button onClick={onDelete} className={`min-h-11 text-sm font-semibold ${set.warmup ? 'text-accent/70' : 'text-muted'}`} aria-label={set.warmup ? 'Calentamiento' : `Serie ${label}`}>
+        {label}
       </button>
       <input
         inputMode="decimal"
@@ -275,6 +320,13 @@ function SetRow({ set, index, onDone }: { set: SetLog; index: number; onDone: ()
       >
         ✓
       </button>
+    </div>
+    {perSide && (
+      <p className="pl-10 text-[11px] text-muted tabular-nums">
+        Por lado: {perSide.plates.length ? perSide.plates.map(formatKg).join(' + ') : 'solo la barra'}
+        {perSide.remainder > 0.01 && ` (faltan ${formatKg(perSide.remainder)} kg)`}
+      </p>
+    )}
     </div>
   )
 }

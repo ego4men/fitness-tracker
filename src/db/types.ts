@@ -20,11 +20,29 @@ export interface Exercise {
   custom: boolean
 }
 
+/**
+ * Progresión automática (idea de Liftosaur, implementación propia):
+ * - linear: StrongLifts. Todas las series con las reps objetivo → +incremento.
+ *   Tras `deloadAfter` fallos seguidos → −10 %.
+ * - double: doble progresión. Trabaja en el rango [reps, repMax]; cuando todas
+ *   las series llegan a repMax → +incremento y vuelves a `reps`.
+ */
+export type Progression =
+  | { type: 'linear'; incrementKg: number; deloadAfter: number }
+  | { type: 'double'; incrementKg: number; repMax: number }
+
+export interface ProgressionState {
+  weightKg: number // peso de trabajo para la próxima sesión
+  failures: number
+}
+
 export interface RoutineExercise {
   exerciseId: string
   sets: number
-  reps: number
+  reps: number // objetivo (en doble progresión: mínimo del rango)
   restSec: number
+  progression?: Progression
+  state?: ProgressionState
 }
 
 export interface Routine {
@@ -33,7 +51,16 @@ export interface Routine {
   notes: string
   exercises: RoutineExercise[]
   order: number // posición en la rotación (Push → Pull → Legs)
+  archived?: boolean // fuera de la rotación (p. ej. al cambiar de programa)
   createdAt: number
+}
+
+export interface ProgressionNote {
+  exerciseId: string
+  outcome: 'up' | 'same' | 'deload'
+  fromKg: number
+  toKg: number
+  message: string
 }
 
 export interface WorkoutSession {
@@ -43,6 +70,7 @@ export interface WorkoutSession {
   startedAt: number
   endedAt: number | null
   notes: string
+  progression?: ProgressionNote[] // resultado de la progresión al terminar
 }
 
 export interface SetLog {
@@ -54,7 +82,20 @@ export interface SetLog {
   reps: number
   rpe: number | null
   done: boolean
+  warmup?: boolean // no cuenta para volumen, récords ni progresión
   createdAt: number
+}
+
+export interface Fast {
+  id: string
+  startedAt: number
+  endedAt: number | null
+  targetHours: number
+}
+
+export interface GymSettings {
+  barKg: number
+  plates: number[] // discos disponibles (por pares), en kg
 }
 
 export interface Macros {

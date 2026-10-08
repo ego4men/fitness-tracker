@@ -1,3 +1,4 @@
+import { isWorkSet } from '../workout/progression'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -22,7 +23,7 @@ function useStrengthData() {
   return useLiveQuery(async () => {
     const sessions = (await db.sessions.toArray()).filter((s) => s.endedAt)
     const dateOf = new Map(sessions.map((s) => [s.id, toISODate(new Date(s.startedAt))]))
-    const sets = (await db.sets.toArray()).filter((s) => s.done && dateOf.has(s.sessionId))
+    const sets = (await db.sets.toArray()).filter((s) => isWorkSet(s) && dateOf.has(s.sessionId))
     const exercises = await db.exercises.bulkGet([...new Set(sets.map((s) => s.exerciseId))])
     const info = new Map(exercises.filter(Boolean).map((e) => [e!.id, e!]))
 

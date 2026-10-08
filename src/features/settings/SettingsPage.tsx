@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FastingToggleCard, GymCard, RemindersCard } from './SettingsCards'
 import { confirmDialog } from '../../components/dialog'
 import { Button, Card, Page } from '../../components/ui'
 import { db } from '../../db/db'
@@ -63,6 +64,10 @@ export function SettingsPage() {
         <span className="font-semibold">Perfil y metas de nutrición</span>
         <span className="text-muted">›</span>
       </Link>
+
+      <RemindersCard />
+      <GymCard />
+      <FastingToggleCard />
 
       <Card title="Respaldo">
         <p className="mb-3 text-sm text-muted">

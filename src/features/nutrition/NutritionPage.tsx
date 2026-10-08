@@ -7,6 +7,7 @@ import type { DiaryEntry } from '../../db/types'
 import { formatLongDate, toISODate } from '../../lib/date'
 import { WaterCard } from '../today/WaterCard'
 import { EntrySheet } from './EntrySheet'
+import { FastingCard } from './FastingCard'
 import { getGoals, getProfile, MEALS, totals } from './foods'
 import { MacroSummary } from './MacroSummary'
 
@@ -105,6 +106,7 @@ export function NutritionPage() {
       })}
 
       {isToday && <WaterCard goalMl={goals.waterMl} />}
+      {isToday && <FastingCard />}
 
       <Link to="/nutricion/mis-alimentos" className="rounded-2xl border border-line bg-surface p-4 font-semibold active:bg-surface-2">
         🥗 Mis alimentos y recetas

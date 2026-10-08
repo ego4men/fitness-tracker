@@ -7,14 +7,15 @@ export function estimate1RM(weightKg: number, reps: number): number {
   return weightKg * (1 + reps / 30)
 }
 
-export function volume(sets: Pick<SetLog, 'weightKg' | 'reps' | 'done'>[]): number {
-  return sets.reduce((s, x) => (x.done ? s + x.weightKg * x.reps : s), 0)
+/** Volumen de las series de trabajo (los calentamientos no cuentan). */
+export function volume(sets: Pick<SetLog, 'weightKg' | 'reps' | 'done' | 'warmup'>[]): number {
+  return sets.reduce((s, x) => (x.done && !x.warmup ? s + x.weightKg * x.reps : s), 0)
 }
 
 /** Siguiente rutina en la rotación (Push → Pull → Legs → Push…). */
 export function nextRoutine(routines: Routine[], lastRoutineId: string | null): Routine | null {
-  if (!routines.length) return null
-  const sorted = [...routines].sort((a, b) => a.order - b.order)
+  const sorted = routines.filter((r) => !r.archived && r.exercises.length).sort((a, b) => a.order - b.order)
+  if (!sorted.length) return null
   const i = sorted.findIndex((r) => r.id === lastRoutineId)
   return sorted[(i + 1) % sorted.length] // i = -1 → la primera
 }

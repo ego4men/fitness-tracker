@@ -3,6 +3,7 @@ import type {
   BodyMetric,
   DiaryEntry,
   Exercise,
+  Fast,
   Food,
   Measurement,
   ProgressPhoto,
@@ -25,6 +26,7 @@ export class FitnessDB extends Dexie {
   settings!: EntityTable<Setting, 'key'>
   measurements!: EntityTable<Measurement, 'id'>
   photos!: EntityTable<ProgressPhoto, 'id'>
+  fasts!: EntityTable<Fast, 'id'>
 
   constructor(name = 'fitness-tracker') {
     super(name)
@@ -44,6 +46,10 @@ export class FitnessDB extends Dexie {
     this.version(2).stores({
       measurements: 'id, date, kind, [kind+date]',
       photos: 'id, date',
+    })
+    // v3 (fase 4): registro de ayunos.
+    this.version(3).stores({
+      fasts: 'id, startedAt',
     })
   }
 }

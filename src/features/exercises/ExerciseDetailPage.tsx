@@ -1,3 +1,4 @@
+import { isWorkSet } from '../workout/progression'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -16,7 +17,7 @@ export function ExerciseDetailPage() {
     const sets = await db.sets
       .where('[exerciseId+createdAt]')
       .between([id, -Infinity], [id, Infinity])
-      .filter((s) => s.done)
+      .filter(isWorkSet)
       .toArray()
     const bySession = new Map<string, typeof sets>()
     for (const s of sets) bySession.set(s.sessionId, [...(bySession.get(s.sessionId) ?? []), s])

@@ -1,8 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { confirmDialog } from '../../components/dialog'
+import { Sheet } from '../../components/Sheet'
 import { Button, Card, Page } from '../../components/ui'
 import { db, newId } from '../../db/db'
 import type { Routine } from '../../db/types'
+import { applyProgram, PROGRAMS } from './defaultRoutines'
 import { getActiveSessionId, lastFinishedRoutineId, startSession } from './session'
 import { formatDuration, nextRoutine } from './stats'
 
@@ -30,6 +34,7 @@ export function WorkoutPage() {
   const data = useWorkoutOverview()
   const start = useStartRoutine()
   const navigate = useNavigate()
+  const [creating, setCreating] = useState(false)
   const names = useLiveQuery(async () => {
     const all = await db.exercises.toArray()
     return new Map(all.map((e) => [e.id, e.name]))
@@ -37,6 +42,21 @@ export function WorkoutPage() {
 
   if (!data) return null
   const { routines, active, next } = data
+  const activeRoutines = routines.filter((r) => !r.archived)
+  const archived = routines.filter((r) => r.archived)
+
+  const onProgram = async (id: string, name: string) => {
+    setCreating(false)
+    const replace =
+      activeRoutines.length > 0 &&
+      (await confirmDialog({
+        title: `Añadir ${name}`,
+        message: '¿Quieres archivar tus rutinas actuales para que la rotación siga solo el nuevo programa? Tu historial no se pierde.',
+        confirmText: 'Sí, archivar las actuales',
+        cancelText: 'No, mantenerlas',
+      }))
+    await applyProgram(id, replace)
+  }
 
   const createRoutine = async () => {
     const id = newId()
@@ -79,12 +99,12 @@ export function WorkoutPage() {
 
       <div className="mt-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Mis rutinas</h2>
-        <button onClick={createRoutine} className="min-h-11 px-2 text-sm font-semibold text-accent">
+        <button onClick={() => setCreating(true)} className="min-h-11 px-2 text-sm font-semibold text-accent">
           + Nueva
         </button>
       </div>
 
-      {routines.map((r) => (
+      {activeRoutines.map((r) => (
         <Card key={r.id}>
           <div className="mb-2 flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -109,6 +129,34 @@ export function WorkoutPage() {
       <Button disabled={!!active} onClick={() => start(null)}>
         Entreno libre (sin rutina)
       </Button>
+
+      {archived.length > 0 && (
+        <details className="rounded-2xl border border-line bg-surface p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-muted">Archivadas ({archived.length})</summary>
+          <ul className="mt-2 divide-y divide-line">
+            {archived.map((r) => (
+              <li key={r.id}>
+                <Link to={`/entreno/rutina/${r.id}`} className="flex min-h-11 items-center justify-between py-2 text-sm">
+                  {r.name} <span className="text-accent">Editar</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {creating && (
+        <Sheet title="Nueva rutina" onClose={() => setCreating(false)}>
+          <Button onClick={createRoutine}>Rutina vacía</Button>
+          <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-muted">Programas</p>
+          {PROGRAMS.map((p) => (
+            <button key={p.id} onClick={() => onProgram(p.id, p.name)} className="rounded-xl border border-line bg-surface-2 p-3 text-left active:bg-surface">
+              <p className="font-semibold">{p.name}</p>
+              <p className="text-xs text-muted">{p.description}</p>
+            </button>
+          ))}
+        </Sheet>
+      )}
     </Page>
   )
 }

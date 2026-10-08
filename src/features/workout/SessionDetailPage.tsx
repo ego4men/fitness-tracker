@@ -1,3 +1,4 @@
+import { isWorkSet } from './progression'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { confirmDialog } from '../../components/dialog'
@@ -18,11 +19,13 @@ export function SessionDetailPage() {
     // Récord: 1RM estimado de hoy mayor que el de cualquier entreno anterior.
     const prs = new Set<string>()
     for (const g of groups) {
-      const today = Math.max(...g.sets.map((s) => estimate1RM(s.weightKg, s.reps)))
+      const work = g.sets.filter(isWorkSet)
+      if (!work.length) continue
+      const today = Math.max(...work.map((s) => estimate1RM(s.weightKg, s.reps)))
       const before = await db.sets
         .where('[exerciseId+createdAt]')
         .between([g.exerciseId, -Infinity], [g.exerciseId, session.startedAt], true, false)
-        .filter((s) => s.done && s.sessionId !== id)
+        .filter((s) => isWorkSet(s) && s.sessionId !== id)
         .toArray()
       const best = Math.max(0, ...before.map((s) => estimate1RM(s.weightKg, s.reps)))
       if (before.length && today > best) prs.add(g.exerciseId)
@@ -49,7 +52,7 @@ export function SessionDetailPage() {
     >
       <div className="grid grid-cols-3 gap-2 text-center">
         <Stat label="Duración" value={session.endedAt ? formatDuration(session.endedAt - session.startedAt) : '—'} />
-        <Stat label="Series" value={String(sets.length)} />
+        <Stat label="Series" value={String(sets.filter(isWorkSet).length)} />
         <Stat label="Volumen" value={`${formatKg(Math.round(volume(sets)))} kg`} />
       </div>
       {prs.size > 0 && (
@@ -57,14 +60,36 @@ export function SessionDetailPage() {
           🏆 ¡{prs.size === 1 ? 'Nuevo récord' : `${prs.size} récords nuevos`} de 1RM estimado!
         </p>
       )}
-      {groups.map((g, i) => (
-        <Card key={g.exerciseId}>
-          <Link to={`/entreno/ejercicios/${encodeURIComponent(g.exerciseId)}`} className="mb-1 block font-semibold">
-            {names[i]} {prs.has(g.exerciseId) && '🏆'}
-          </Link>
-          <p className="text-sm tabular-nums text-text/80">{summarizeSets(g.sets)}</p>
+      {session.progression && session.progression.length > 0 && (
+        <Card title="Próximo entreno">
+          <ul className="space-y-2 text-sm">
+            {session.progression.map((p) => {
+              const i = groups.findIndex((g) => g.exerciseId === p.exerciseId)
+              const icon = p.outcome === 'up' ? '⬆️' : p.outcome === 'deload' ? '⬇️' : '➡️'
+              return (
+                <li key={p.exerciseId} className="flex gap-2">
+                  <span aria-hidden>{icon}</span>
+                  <span>
+                    <span className="font-semibold">{i >= 0 ? names[i] : p.exerciseId}:</span> {p.message}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
         </Card>
-      ))}
+      )}
+      {groups.map((g, i) => {
+        const warm = g.sets.filter((s) => s.warmup).length
+        return (
+          <Card key={g.exerciseId}>
+            <Link to={`/entreno/ejercicios/${encodeURIComponent(g.exerciseId)}`} className="mb-1 block font-semibold">
+              {names[i]} {prs.has(g.exerciseId) && '🏆'}
+            </Link>
+            <p className="text-sm tabular-nums text-text/80">{summarizeSets(g.sets.filter(isWorkSet))}</p>
+            {warm > 0 && <p className="text-xs text-muted">+ {warm} de calentamiento</p>}
+          </Card>
+        )
+      })}
       <Button variant="danger" onClick={onDelete}>
         Borrar entreno
       </Button>

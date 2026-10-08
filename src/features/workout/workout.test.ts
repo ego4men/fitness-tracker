@@ -21,7 +21,8 @@ describe('stats', () => {
   })
 
   it('rota Push → Pull → Legs → Push', () => {
-    const rs = [routine('legs', 2), routine('push', 0), routine('pull', 1)]
+    const x = [{ exerciseId: 'a', sets: 1, reps: 5, restSec: 60 }]
+    const rs = [routine('legs', 2, x), routine('push', 0, x), routine('pull', 1, x), { ...routine('old', 3, x), archived: true }, routine('vacia', 4)]
     expect(nextRoutine(rs, null)?.id).toBe('push')
     expect(nextRoutine(rs, 'push')?.id).toBe('pull')
     expect(nextRoutine(rs, 'legs')?.id).toBe('push')
