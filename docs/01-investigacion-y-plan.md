@@ -71,3 +71,4 @@ Una sola app que une **entreno + nutrición + hábitos**, con un "Hoy" unificado
 | 3 | Progreso: récords personales, 1RM estimado, gráficas, peso y medidas, fotos, rachas y pantalla "Hoy" unificada. |
 | 4 | Programas con progresión automática (5x5, GZCLP, 5/3/1), calculadora de discos, calentamientos, ayuno y notificaciones. |
 | 5 | Respaldo automático en Google Drive y, opcionalmente, sincronización en la nube. |
+| 6 | Asistente de IA para la dieta (chat con acceso de solo lectura a tus datos). Investigación en `docs/ideas/asistente-ia-nutricion.md`. |
