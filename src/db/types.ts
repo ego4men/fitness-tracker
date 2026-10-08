@@ -6,8 +6,11 @@ export type ISODate = string // 'YYYY-MM-DD' en hora local
 
 export interface Exercise {
   id: string
-  name: string
-  category: string // strength, cardio, stretching…
+  name: string // español
+  nameEn: string
+  category: string // strength, cardio, stretching… (claves en inglés, ver exercises/labels.ts)
+  force: 'push' | 'pull' | 'static' | null
+  mechanic: 'compound' | 'isolation' | null
   primaryMuscles: string[]
   secondaryMuscles: string[]
   equipment: string | null
@@ -29,12 +32,14 @@ export interface Routine {
   name: string
   notes: string
   exercises: RoutineExercise[]
+  order: number // posición en la rotación (Push → Pull → Legs)
   createdAt: number
 }
 
 export interface WorkoutSession {
   id: string
   routineId: string | null
+  name: string
   startedAt: number
   endedAt: number | null
   notes: string

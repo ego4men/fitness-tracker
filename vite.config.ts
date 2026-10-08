@@ -33,6 +33,19 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json}'],
         navigateFallback: 'index.html',
+        // Imágenes de ejercicios: se guardan offline al verlas por primera vez.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              url.hostname === 'raw.githubusercontent.com' && url.pathname.startsWith('/yuhonas/free-exercise-db/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'exercise-images',
+              expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

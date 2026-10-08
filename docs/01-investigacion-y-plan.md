@@ -65,8 +65,8 @@ Una sola app que une **entreno + nutrición + hábitos**, con un "Hoy" unificado
 
 | Fase | Entregable usable en el iPhone |
 |---|---|
-| 0 | Esqueleto PWA desplegado y "Agregar a inicio" funcionando, con exportar/importar respaldo. |
-| 1 | Entreno: catálogo (free-exercise-db), rutinas, sesión en vivo (series, repeticiones, peso, RPE), temporizador de descanso, "la última vez…" e historial. |
+| 0 ✅ | Esqueleto PWA desplegado y "Agregar a inicio" funcionando, con exportar/importar respaldo. |
+| 1 ✅ | Entreno: catálogo (free-exercise-db), rutinas, sesión en vivo (series, repeticiones, peso, RPE), temporizador de descanso, "la última vez…" e historial. |
 | 2 | Nutrición: diario por comidas, búsqueda en Open Food Facts y USDA, código de barras, quick add, recetas, agua, metas (IOM/OMS). |
 | 3 | Progreso: récords personales, 1RM estimado, gráficas, peso y medidas, fotos, rachas y pantalla "Hoy" unificada. |
 | 4 | Programas con progresión automática (5x5, GZCLP, 5/3/1), calculadora de discos, calentamientos, ayuno y notificaciones. |

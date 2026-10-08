@@ -12,6 +12,12 @@ PWA personal de entrenamiento + nutrición + hábitos, instalada en un iPhone 15
 - `npm run dev` (con `--host`, accesible desde el iPhone en la misma WiFi) · `npm test` · `npm run build` · `npm run typecheck`
 - En Windows, Node está en `C:\Program Files\nodejs`; si `node` no se encuentra, añádelo al PATH de la shell.
 
+## Entreno (fase 1)
+- Catálogo: `scripts/data/free-exercise-db.json` (fuente fijada) + `scripts/data/nombres-es.txt` (una traducción por línea, mismo orden) → `node scripts/build-exercises.mjs` → `public/data/exercises.json`. Si cambia, sube `CATALOG_VERSION` en `src/features/exercises/catalog.ts`. Los datos guardan músculos y equipo con sus claves en inglés; se traducen al mostrarse (`exercises/labels.ts`). Las instrucciones siguen en inglés.
+- Imágenes de ejercicios: raw.githubusercontent.com con caché CacheFirst del service worker (quedan offline una vez vistas).
+- Sesión activa: `settings.activeSessionId`. Al terminar se guardan solo las series marcadas (`done`). "Última vez" = series hechas del último entreno con ese ejercicio.
+- Unidades: kg. El usuario entrena Push/Pull/Legs; las rutinas tienen `order` y la app sugiere la siguiente de la rotación.
+
 ## Convenciones
 - Código organizado por feature: `src/features/<feature>/`. UI compartida en `src/components/ui.tsx`.
 - UI en español. Mobile-first, objetivos táctiles ≥ 44px, respetar safe areas (`.pt-safe` / `.pb-safe`), inputs ≥ 16px (evita zoom en iOS).
