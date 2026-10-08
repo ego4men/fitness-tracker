@@ -26,6 +26,11 @@ PWA personal de entrenamiento + nutrición + hábitos, instalada en un iPhone 15
 - Diálogos: usar `confirmDialog()` (`components/dialog.tsx`), nunca `window.confirm` (en las PWA de iOS puede no mostrarse).
 - Para probar cambios en el navegador, `vite build` + `vite preview` es más fiable que `vite dev` (el watcher de Windows a veces pierde ediciones). Desregistra el service worker si ves una versión vieja.
 
+## Progreso (fase 3)
+- Esquema v2 de Dexie: tablas `measurements` (`[kind+date]`) y `photos`. Las fotos se guardan como data URL JPEG ≤1080 px para que entren en el respaldo JSON.
+- Gráficas SVG propias en `components/charts.tsx` (sin librería). Siguen la skill dataviz: líneas 2px, marcadores ≥8px con anillo, barras ≤24px redondeadas, tooltip táctil, leyenda con ≥2 series y "Ver datos" como vista de tabla. Los colores de datos son tokens `--color-series*`, `--color-heat-*` y macros (validados con `validate_palette.js` para el fondo oscuro). El lima (`accent`) es de interfaz, no de datos.
+- Cálculos en `progress/stats.ts`: media móvil por días naturales, ritmo kg/semana por regresión, rachas y calendario.
+
 ## Convenciones
 - Código organizado por feature: `src/features/<feature>/`. UI compartida en `src/components/ui.tsx`.
 - UI en español. Mobile-first, objetivos táctiles ≥ 44px, respetar safe areas (`.pt-safe` / `.pb-safe`), inputs ≥ 16px (evita zoom en iOS).

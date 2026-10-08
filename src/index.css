@@ -11,9 +11,16 @@
   --color-accent-ink: #0b0f0e;
   --color-water: #38bdf8;
   --color-danger: #f87171;
-  --color-protein: #f472b6;
-  --color-carbs: #fbbf24;
-  --color-fat: #a78bfa;
+  /* Colores de datos (validados para el fondo oscuro con el validador de dataviz). */
+  --color-protein: #d55181;
+  --color-carbs: #c98500;
+  --color-fat: #9085e9;
+  --color-series: #3987e5;
+  --color-series-soft: #6da7ec;
+  --color-heat-1: #184f95;
+  --color-heat-2: #2a78d6;
+  --color-heat-3: #5598e7;
+  --color-heat-4: #9ec5f4;
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
 }
 

@@ -4,6 +4,8 @@ import type {
   DiaryEntry,
   Exercise,
   Food,
+  Measurement,
+  ProgressPhoto,
   Routine,
   SetLog,
   Setting,
@@ -21,6 +23,8 @@ export class FitnessDB extends Dexie {
   water!: EntityTable<WaterLog, 'id'>
   body!: EntityTable<BodyMetric, 'id'>
   settings!: EntityTable<Setting, 'key'>
+  measurements!: EntityTable<Measurement, 'id'>
+  photos!: EntityTable<ProgressPhoto, 'id'>
 
   constructor(name = 'fitness-tracker') {
     super(name)
@@ -35,6 +39,11 @@ export class FitnessDB extends Dexie {
       water: 'id, date',
       body: 'id, date',
       settings: 'key',
+    })
+    // v2 (fase 3): medidas corporales y fotos de progreso.
+    this.version(2).stores({
+      measurements: 'id, date, kind, [kind+date]',
+      photos: 'id, date',
     })
   }
 }

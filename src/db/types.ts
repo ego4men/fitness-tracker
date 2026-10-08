@@ -125,6 +125,23 @@ export interface BodyMetric {
   weightKg: number
 }
 
+export type MeasurementKind = 'waist' | 'chest' | 'arm' | 'hip' | 'thigh' | 'neck' | 'bodyfat'
+
+export interface Measurement {
+  id: string
+  date: ISODate
+  kind: MeasurementKind
+  value: number // cm, o % en bodyfat
+}
+
+export interface ProgressPhoto {
+  id: string
+  date: ISODate
+  dataUrl: string // JPEG comprimido (≤1080 px); string para que entre en el respaldo JSON
+  note: string
+  createdAt: number
+}
+
 export interface Setting {
   key: string
   value: unknown
