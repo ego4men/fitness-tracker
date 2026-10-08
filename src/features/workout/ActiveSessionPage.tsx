@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { confirmDialog } from '../../components/dialog'
 import { Button, Page } from '../../components/ui'
 import { db } from '../../db/db'
-import type { Exercise, SetLog } from '../../db/types'
+import type { Exercise, Routine, SetLog } from '../../db/types'
 import { ExercisePicker, ExerciseThumb } from '../exercises/ExerciseBrowser'
 import { useRestTimer } from './restTimer'
 import {
@@ -15,6 +16,7 @@ import {
   groupByExercise,
   lastPerformance,
   removeExerciseFromSession,
+  switchSession,
 } from './session'
 import { formatDuration, summarizeSets } from './stats'
 
@@ -23,6 +25,7 @@ const DEFAULT_REST = 90
 export function ActiveSessionPage() {
   const navigate = useNavigate()
   const [picking, setPicking] = useState(false)
+  const [switching, setSwitching] = useState(false)
   const [, tick] = useState(0)
   const startRest = useRestTimer((s) => s.start)
 
@@ -58,22 +61,52 @@ export function ActiveSessionPage() {
 
   const onFinish = async () => {
     const pending = totalCount - doneCount
-    const msg = doneCount
-      ? pending
-        ? `¿Terminar? ${pending} serie(s) sin marcar no se guardarán.`
-        : '¿Terminar y guardar el entreno?'
-      : 'No marcaste ninguna serie: el entreno se descartará. ¿Terminar?'
-    if (!confirm(msg)) return
+    const ok = await confirmDialog(
+      doneCount
+        ? {
+            title: 'Terminar entreno',
+            message: pending ? `${pending} serie(s) sin marcar no se guardarán.` : 'Se guardará en tu historial.',
+            confirmText: 'Terminar y guardar',
+          }
+        : {
+            title: 'Terminar entreno',
+            message: 'No marcaste ninguna serie, así que el entreno se descartará.',
+            confirmText: 'Descartar',
+            danger: true,
+          },
+    )
+    if (!ok) return
     useRestTimer.getState().stop()
     const result = await finishSession(session.id)
     navigate(result === 'saved' ? `/entreno/historial/${session.id}` : '/entreno', { replace: true })
   }
 
   const onDiscard = async () => {
-    if (!confirm('¿Descartar este entreno? Se borrará todo lo registrado.')) return
+    const ok = await confirmDialog({
+      title: 'Descartar entreno',
+      message: 'Se borrará todo lo registrado en este entreno.',
+      confirmText: 'Descartar',
+      danger: true,
+    })
+    if (!ok) return
     useRestTimer.getState().stop()
     await discardSession(session.id)
     navigate('/entreno', { replace: true })
+  }
+
+  const onSwitch = async (target: Routine | null) => {
+    setSwitching(false)
+    if (doneCount) {
+      const ok = await confirmDialog({
+        title: `Cambiar a ${target?.name ?? 'entreno libre'}`,
+        message: `Ya marcaste ${doneCount} serie(s) en ${session.name}; se descartarán.`,
+        confirmText: 'Cambiar',
+        danger: true,
+      })
+      if (!ok) return
+    }
+    useRestTimer.getState().stop()
+    await switchSession(session.id, target)
   }
 
   const onPick = async (e: Exercise) => {
@@ -106,11 +139,15 @@ export function ActiveSessionPage() {
       })}
 
       <Button onClick={() => setPicking(true)}>+ Añadir ejercicio</Button>
+      <Button onClick={() => setSwitching(true)}>Cambiar de rutina</Button>
       <Button variant="danger" onClick={onDiscard}>
         Descartar entreno
       </Button>
 
       {picking && <ExercisePicker onSelect={onPick} onClose={() => setPicking(false)} />}
+      {switching && (
+        <RoutineSwitcher currentId={session.routineId} onSelect={onSwitch} onClose={() => setSwitching(false)} />
+      )}
     </Page>
   )
 }
@@ -131,9 +168,13 @@ function ExerciseBlock({
   const last = useLiveQuery(() => lastPerformance(exerciseId, sessionId), [exerciseId, sessionId])
 
   const onRemove = async () => {
-    if (confirm(`¿Quitar ${exercise?.name ?? 'este ejercicio'} del entreno?`)) {
-      await removeExerciseFromSession(sessionId, exerciseId)
-    }
+    const ok = await confirmDialog({
+      title: 'Quitar ejercicio',
+      message: `${exercise?.name ?? 'Este ejercicio'} y sus series se quitarán del entreno.`,
+      confirmText: 'Quitar',
+      danger: true,
+    })
+    if (ok) await removeExerciseFromSession(sessionId, exerciseId)
   }
 
   return (
@@ -192,7 +233,9 @@ function SetRow({ set, index, onDone }: { set: SetLog; index: number; onDone: ()
   }
 
   const onDelete = async () => {
-    if (!set.done && confirm(`¿Borrar la serie ${index}?`)) await db.sets.delete(set.id)
+    if (set.done) return
+    const ok = await confirmDialog({ title: `Borrar la serie ${index}`, confirmText: 'Borrar', danger: true })
+    if (ok) await db.sets.delete(set.id)
   }
 
   const input = 'min-h-11 w-full rounded-lg border bg-surface-2 text-center text-lg font-semibold tabular-nums focus:border-accent focus:outline-none'
@@ -232,6 +275,37 @@ function SetRow({ set, index, onDone }: { set: SetLog; index: number; onDone: ()
       >
         ✓
       </button>
+    </div>
+  )
+}
+
+function RoutineSwitcher({
+  currentId,
+  onSelect,
+  onClose,
+}: {
+  currentId: string | null
+  onSelect: (r: Routine | null) => void
+  onClose: () => void
+}) {
+  const routines = useLiveQuery(async () => (await db.routines.toArray()).sort((a, b) => a.order - b.order), [])
+  const option = 'min-h-12 w-full rounded-xl border border-line bg-surface-2 px-4 text-left font-semibold active:bg-surface disabled:opacity-40'
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="pb-safe w-full max-w-sm rounded-3xl border border-line bg-surface p-5" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-3 text-lg font-bold">Cambiar a…</h2>
+        <div className="flex flex-col gap-2">
+          {routines?.map((r) => (
+            <button key={r.id} disabled={r.id === currentId || !r.exercises.length} onClick={() => onSelect(r)} className={option}>
+              {r.name} {r.id === currentId && <span className="text-sm font-normal text-muted">(actual)</span>}
+            </button>
+          ))}
+          <button onClick={() => onSelect(null)} className={option}>
+            Entreno libre
+          </button>
+          <Button onClick={onClose}>Cancelar</Button>
+        </div>
+      </div>
     </div>
   )
 }

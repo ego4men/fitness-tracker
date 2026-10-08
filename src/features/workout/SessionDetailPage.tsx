@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { confirmDialog } from '../../components/dialog'
 import { BackLink, Button, Card, Page } from '../../components/ui'
 import { db } from '../../db/db'
 import { deleteSession, groupByExercise } from './session'
@@ -34,7 +35,8 @@ export function SessionDetailPage() {
   const { session, groups, sets, names, prs } = data
 
   const onDelete = async () => {
-    if (!confirm('¿Borrar este entreno del historial?')) return
+    const ok = await confirmDialog({ title: 'Borrar este entreno', message: 'Se quitará de tu historial.', confirmText: 'Borrar', danger: true })
+    if (!ok) return
     await deleteSession(id)
     navigate('/entreno/historial', { replace: true })
   }

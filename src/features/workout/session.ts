@@ -134,6 +134,14 @@ export async function discardSession(sessionId: string) {
   })
 }
 
+/** Descarta el entreno actual y empieza otro en una sola transacción (sin estado intermedio vacío). */
+export async function switchSession(oldId: string, routine: Routine | null): Promise<string> {
+  return db.transaction('rw', db.sessions, db.sets, db.settings, async () => {
+    await discardSession(oldId)
+    return startSession(routine)
+  })
+}
+
 export async function deleteSession(sessionId: string) {
   await db.transaction('rw', db.sessions, db.sets, async () => {
     await db.sets.where('sessionId').equals(sessionId).delete()

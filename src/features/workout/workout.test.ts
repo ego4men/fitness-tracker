@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '../../db/db'
 import type { Routine } from '../../db/types'
-import { finishSession, getActiveSessionId, lastPerformance, startSession, addSet } from './session'
+import { finishSession, getActiveSessionId, lastPerformance, startSession, addSet, switchSession } from './session'
 import { estimate1RM, nextRoutine, prefillSets, summarizeSets } from './stats'
 
 const routine = (id: string, order: number, exercises: Routine['exercises'] = []): Routine => ({
@@ -97,6 +97,17 @@ describe('sesión de entreno', () => {
       ['a', 50],
       ['b', 0],
     ])
+  })
+
+  it('cambia de rutina sin dejar un estado sin entreno activo', async () => {
+    const push = routine('push', 0, [{ exerciseId: 'bench', sets: 2, reps: 8, restSec: 60 }])
+    const legs = routine('legs', 1, [{ exerciseId: 'squat', sets: 3, reps: 5, restSec: 60 }])
+    const old = await startSession(push)
+    const id = await switchSession(old, legs)
+    expect(await getActiveSessionId()).toBe(id)
+    expect(await db.sessions.get(old)).toBeUndefined()
+    expect(await db.sets.where('sessionId').equals(id).count()).toBe(3)
+    expect((await db.sessions.get(id))?.name).toBe('legs')
   })
 
   it('descarta un entreno sin series hechas', async () => {

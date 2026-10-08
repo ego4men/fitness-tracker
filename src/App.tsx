@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { DialogHost } from './components/dialog'
 import { TabBar } from './components/TabBar'
 import { UpdatePrompt } from './components/UpdatePrompt'
 import { ensureCatalog } from './features/exercises/catalog'
@@ -41,6 +42,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <DialogHost />
       <UpdatePrompt />
       <RestTimerBar />
       <TabBar />

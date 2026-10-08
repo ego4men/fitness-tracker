@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { confirmDialog } from '../../components/dialog'
 import { Button, Card, Page } from '../../components/ui'
 import { db } from '../../db/db'
 import { estimateUsageMB, isPersisted, requestPersist } from '../../lib/storage'
@@ -42,9 +43,13 @@ export function SettingsPage() {
     run(async () => {
       const backup = parseBackup(await file.text())
       const when = new Date(backup.exportedAt).toLocaleString('es')
-      if (!confirm(`Esto reemplazará TODOS tus datos actuales por el respaldo del ${when}. ¿Continuar?`)) {
-        return 'Importación cancelada.'
-      }
+      const ok = await confirmDialog({
+        title: 'Restaurar respaldo',
+        message: `Esto reemplazará TODOS tus datos actuales por el respaldo del ${when}.`,
+        confirmText: 'Restaurar',
+        danger: true,
+      })
+      if (!ok) return 'Importación cancelada.'
       const n = await restoreBackup(db, backup)
       return `Respaldo restaurado (${n} registros).`
     })

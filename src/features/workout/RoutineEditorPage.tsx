@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { confirmDialog } from '../../components/dialog'
 import { BackLink, Button, Card, Page, Stepper } from '../../components/ui'
 import { db } from '../../db/db'
 import type { Exercise, Routine, RoutineExercise } from '../../db/types'
@@ -39,7 +40,13 @@ export function RoutineEditorPage() {
   }
 
   const onDelete = async () => {
-    if (!confirm(`¿Borrar la rutina "${routine.name}"? Tu historial no se borra.`)) return
+    const ok = await confirmDialog({
+      title: `Borrar "${routine.name}"`,
+      message: 'Tu historial de entrenos no se borra.',
+      confirmText: 'Borrar rutina',
+      danger: true,
+    })
+    if (!ok) return
     await db.routines.delete(id)
     navigate('/entreno', { replace: true })
   }
